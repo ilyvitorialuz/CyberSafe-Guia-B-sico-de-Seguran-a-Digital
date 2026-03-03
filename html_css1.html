@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>CyberSafe – Guia Básico de Segurança Digital</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style1.css">
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="header-inner">
+    <div class="badge">🔒 Projeto Educativo 2026</div>
+    <h1>Cyber<span>Safe</span></h1>
+    <p>Guia Básico de Segurança Digital</p>
+  </div>
+</header>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-inner">
+    <a href="#login">Login</a>
+    <a href="#modulos">Módulos</a>
+    <a href="#quiz">Quiz</a>
+    <a href="#ferramentas">Ferramentas</a>
+    <a href="#contato">Contato</a>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- LOGIN -->
+  <section id="login" class="card">
+    <div class="card-header">
+      <div class="card-icon">👤</div>
+      <h2>Gestão de Usuários</h2>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+
+        <!-- Cadastro -->
+        <div class="form-box">
+          <h3>Cadastro</h3>
+          <div class="field">
+            <label for="reg-name">Nome</label>
+            <input id="reg-name" type="text" placeholder="Seu nome completo" required>
+          </div>
+          <div class="field">
+            <label for="reg-email">E-mail</label>
+            <input id="reg-email" type="email" placeholder="seu@email.com" required>
+          </div>
+          <div class="field">
+            <label for="reg-pass">Senha</label>
+            <input id="reg-pass" type="password" placeholder="Crie uma senha forte" required>
+          </div>
+          <button class="btn btn-primary">Criar Conta →</button>
+        </div>
+
+        <!-- Login -->
+        <div class="form-box">
+          <h3>Entrar</h3>
+          <div class="field">
+            <label for="login-email">E-mail</label>
+            <input id="login-email" type="email" placeholder="seu@email.com">
+          </div>
+          <div class="field">
+            <label for="login-pass">Senha</label>
+            <input id="login-pass" type="password" placeholder="••••••••">
+          </div>
+          <button class="btn btn-primary">Entrar →</button>
+          <hr class="divider">
+          <div class="field">
+            <label for="recover-email">Recuperar Senha</label>
+            <input id="recover-email" type="email" placeholder="seu@email.com">
+          </div>
+          <button class="btn btn-outline">Enviar Link</button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- MÓDULOS -->
+  <section id="modulos" class="card">
+    <div class="card-header">
+      <div class="card-icon">📚</div>
+      <h2>Módulos Educativos</h2>
+    </div>
+    <div class="card-body">
+
+      <div class="module-grid">
+        <div class="module-card">
+          <span class="module-tag">Teoria</span>
+          <h3>Fundamentos</h3>
+          <p>Conceitos essenciais de segurança digital explicados de forma clara e objetiva.</p>
+        </div>
+        <div class="module-card">
+          <span class="module-tag">Exemplos Reais</span>
+          <h3>Certo vs Errado</h3>
+          <p>Casos práticos comparando boas e más práticas no dia a dia digital.</p>
+        </div>
+        <div class="module-card">
+          <span class="module-tag">Checklist</span>
+          <h3>Boas Práticas</h3>
+          <ul class="checklist">
+            <li>Use senhas fortes e únicas</li>
+            <li>Evite links suspeitos</li>
+            <li>Ative a verificação em duas etapas</li>
+          </ul>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="glossary-section">
+        <div class="field">
+          <label for="glossary-search">Glossário — Buscar termo</label>
+          <input id="glossary-search" type="search" placeholder="Ex: phishing, malware, VPN...">
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quiz" class="card">
+    <div class="card-header">
+      <div class="card-icon">🧠</div>
+      <h2>Quiz Interativo</h2>
+    </div>
+    <div class="card-body">
+
+      <div class="quiz-question">
+        <p class="question-text">Qual dessas senhas é mais segura?</p>
+        <label class="radio-option">
+          <input type="radio" name="q1" value="a">
+          <span>123456</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="q1" value="b">
+          <span>Cyber@2026!</span>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="q1" value="c">
+          <span>senha123</span>
+        </label>
+      </div>
+
+      <div class="quiz-actions">
+        <button class="btn btn-primary">Responder</button>
+        <button class="btn btn-accent">🏆 Gerar Certificado</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FERRAMENTAS -->
+  <section id="ferramentas" class="card">
+    <div class="card-header">
+      <div class="card-icon">🛡️</div>
+      <h2>Ferramentas</h2>
+    </div>
+    <div class="card-body">
+
+      <!-- Simulador de Senha -->
+      <div class="strength-wrap">
+        <h3>Simulador de Força de Senha</h3>
+        <div class="field">
+          <input type="password" placeholder="Digite uma senha para testar...">
+        </div>
+        <div class="strength-bar-track">
+          <div class="strength-bar-fill"></div>
+        </div>
+        <div class="strength-label">Força: Boa</div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Central de Ajuda -->
+      <div class="help-section">
+        <p class="help-title">Central de Ajuda</p>
+        <div class="help-links">
+          <a href="https://new.safernet.org.br" target="_blank" class="help-link">
+            <div class="help-link-icon">🌐</div>
+            SaferNet Brasil
+          </a>
+          <a href="https://www.delegaciainterativa.sp.gov.br" target="_blank" class="help-link">
+            <div class="help-link-icon">👮</div>
+            Polícia Civil — Delegacia Virtual
+          </a>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Acessibilidade -->
+      <div class="a11y-panel">
+        <span>Tamanho do texto</span>
+        <div class="btn-group">
+          <button class="btn btn-outline btn-sm" onclick="document.body.style.fontSize='17px'">A+</button>
+          <button class="btn btn-outline btn-sm" onclick="document.body.style.fontSize='14px'">A−</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CONTATO -->
+  <section id="contato" class="card">
+    <div class="card-header">
+      <div class="card-icon">💬</div>
+      <h2>Sugira um Tema</h2>
+    </div>
+    <div class="card-body">
+      <div class="contact-box">
+        <div class="field">
+          <label for="contact-msg">Sua mensagem</label>
+          <textarea id="contact-msg" placeholder="Sugestões, dúvidas ou críticas..."></textarea>
+        </div>
+        <button class="btn btn-primary">Enviar Sugestão →</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <p><span>CyberSafe</span> © 2026 — Projeto Educativo em Segurança Digital</p>
+</footer>
+
+</body>
+</html>
