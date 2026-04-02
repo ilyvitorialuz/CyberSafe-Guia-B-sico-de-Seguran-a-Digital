@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI/UX DO CAOS :: BINARY BIRTHDATE TERMINAL</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box }
+    body {
+      background: #020208; overflow: hidden;
+      width: 100vw; height: 100vh;
+      font-family: 'Courier New', Courier, monospace;
+      user-select: none; cursor: none;
+    }
+    canvas { position: fixed; top: 0; left: 0; z-index: 1 }
+
+    #fake-cursor {
+      position: fixed; width: 16px; height: 16px;
+      border: 2px solid #ff4400; border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: left 0.08s, top 0.08s;
+      mix-blend-mode: difference;
+    }
+    #fake-cursor::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 4px; height: 4px; background: #ff4400;
+      border-radius: 50%; transform: translate(-50%, -50%);
+    }
+
+    #hud {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 10; pointer-events: none;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px; padding: 8px 20px;
+    }
+    #title {
+      color: #00ffff; font-size: 15px; font-weight: bold;
+      letter-spacing: 4px; text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff88;
+    }
+    #bit-progress {
+      display: flex; gap: 3px; align-items: center;
+      flex-wrap: wrap; justify-content: center;
+    }
+    .seg-label { color: #ffffff44; font-size: 9px; letter-spacing: 1px; margin: 0 3px }
+    .bit-cell {
+      width: 17px; height: 20px; border: 1px solid #ffffff22; border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: #00ff88; text-shadow: 0 0 8px #00ff88;
+      background: rgba(0,255,136,0.07); transition: all .15s;
+    }
+    .bit-cell.empty { color: #ffffff22; text-shadow: none; background: rgba(255,255,255,0.03) }
+    .bit-cell.day   { border-color: #00ccff44 }
+    .bit-cell.month { border-color: #ff88ff44 }
+    .bit-cell.year  { border-color: #ffaa0044 }
+    .seg-sep { width: 5px; height: 2px; background: #ffffff22; border-radius: 1px; margin: 0 2px }
+
+    #timer-row { display: flex; align-items: center; gap: 10px }
+    #timer {
+      font-size: 24px; font-weight: bold; color: #ff4444;
+      text-shadow: 0 0 20px #ff4444; min-width: 44px; text-align: center;
+    }
+    #timer.urgent { color: #ff0000; animation: pulse .5s infinite alternate }
+    @keyframes pulse {
+      from { text-shadow: 0 0 10px #ff0000 }
+      to   { text-shadow: 0 0 40px #ff0000, 0 0 80px #ff000055 }
+    }
+    #state-pill {
+      font-size: 11px; letter-spacing: 2px; font-weight: bold;
+      padding: 3px 12px; border-radius: 20px; border: 1px solid; transition: all .15s;
+    }
+    #state-pill.green {
+      color: #00ff88; border-color: #00ff8866;
+      background: rgba(0,255,136,0.1); text-shadow: 0 0 10px #00ff88;
+    }
+    #state-pill.red {
+      color: #ff2244; border-color: #ff224466;
+      background: rgba(255,34,68,0.1); text-shadow: 0 0 10px #ff2244;
+    }
+    #easy-banner {
+      color: #ffff00; font-size: 13px; font-weight: bold; letter-spacing: 5px;
+      text-shadow: 0 0 20px #ffff00; display: none; animation: easyblink .6s infinite alternate;
+    }
+    @keyframes easyblink { from { opacity:.6 } to { opacity:1 } }
+    #validation-msg {
+      font-size: 17px; font-weight: bold; letter-spacing: 4px;
+      min-height: 26px; transition: all .3s;
+    }
+    #decoded-date { font-size: 11px; letter-spacing: 2px; color: #ffffff66; min-height: 16px }
+
+    #bottom-hud {
+      position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 10; pointer-events: none;
+      text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    }
+    #instructions { color: #ffffff44; font-size: 10px; letter-spacing: 1px }
+    #speed-indicator {
+      position: fixed; top: 10px; right: 20px; z-index: 10;
+      pointer-events: none; color: #ffffff33; font-size: 11px;
+      letter-spacing: 1px; text-align: right;
+    }
+    #saved-log {
+      position: fixed; bottom: 60px; right: 16px; z-index: 10;
+      pointer-events: none; max-width: 260px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .save-entry {
+      background: rgba(0,255,136,0.12); border: 1px solid #00ff8833;
+      border-radius: 4px; padding: 5px 10px; color: #00ff88;
+      font-size: 11px; letter-spacing: 1px; animation: fadeIn .5s;
+    }
+    @keyframes fadeIn {
+      from { opacity:0; transform: translateY(10px) }
+      to   { opacity:1; transform: translateY(0) }
+    }
+    #gravity-info {
+      position: fixed; top: 10px; left: 20px; z-index: 10;
+      pointer-events: none; color: #ff660033; font-size: 10px; letter-spacing: 1px;
+    }
+    #lie-tooltip {
+      position: fixed; z-index: 9998; pointer-events: none;
+      background: #111; border: 1px solid #333; border-radius: 4px;
+      padding: 4px 8px; color: #ff8800; font-size: 10px;
+      letter-spacing: 1px; display: none; white-space: nowrap;
+    }
+    #fake-progress {
+      position: fixed; bottom: 38px; left: 50%; transform: translateX(-50%);
+      z-index: 10; pointer-events: none; width: 200px; text-align: center;
+    }
+    #fake-progress-bar {
+      height: 4px; background: #ffffff11; border-radius: 2px; overflow: hidden; margin-top: 3px;
+    }
+    #fake-progress-fill {
+      height: 100%; background: linear-gradient(90deg, #00ff88, #00ccff);
+      border-radius: 2px; width: 0%; transition: width 0.1s;
+    }
+    #fake-progress-label { color: #ffffff22; font-size: 9px; letter-spacing: 2px }
+    #invert-warning {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      z-index: 9; pointer-events: none; font-size: 11px; letter-spacing: 3px;
+      color: #ff000055; font-weight: bold; display: none;
+    }
+
+    /* ── TELEPORTING VALIDATE BUTTON ───────────────────────────── */
+    #validate-btn {
+      position: fixed; z-index: 20;
+      padding: 9px 20px;
+      background: rgba(0,0,0,0.9);
+      border: 2px solid #00ffcc;
+      border-radius: 6px;
+      color: #00ffcc;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px; font-weight: bold; letter-spacing: 3px;
+      cursor: none;
+      text-shadow: 0 0 12px #00ffcc;
+      box-shadow: 0 0 20px #00ffcc44, inset 0 0 10px rgba(0,255,204,0.05);
+      white-space: nowrap;
+      transform: translate(-50%, -50%);
+    }
+    #validate-btn:hover {
+      background: rgba(0,255,204,0.12);
+      box-shadow: 0 0 35px #00ffccaa;
+    }
+    #validate-btn.not-ready {
+      border-color: #555; color: #555;
+      text-shadow: none;
+      box-shadow: none;
+    }
+    #validate-btn.teleporting {
+      opacity: 0;
+      transition: opacity 0.08s;
+    }
+    #validate-btn.arrived {
+      opacity: 1;
+      transition: opacity 0.15s;
+    }
+  </style>
+</head>
+<body>
+  <div id="fake-cursor"></div>
+  <canvas id="canvas"></canvas>
+
+  <div id="hud">
+    <div id="title">◈ Data de nascimento: Em binário ◈</div>
+    <div id="bit-progress">
+      <span class="seg-label">DIA 8b</span>
+      <div id="day-bits" style="display:flex;gap:2px"></div>
+      <div class="seg-sep"></div>
+      <span class="seg-label">MÊS 8b</span>
+      <div id="month-bits" style="display:flex;gap:2px"></div>
+      <div class="seg-sep"></div>
+      <span class="seg-label">ANO 8b (+1900)</span>
+      <div id="year-bits" style="display:flex;gap:2px"></div>
+    </div>
+    <div id="timer-row">
+      <div id="timer">30</div>
+      <div id="state-pill" class="green">⬤ VERDE — CLIQUE VÁLIDO</div>
+    </div>
+    <div id="easy-banner">⚡ EASY MODE ⚡</div>
+    <div id="validation-msg"></div>
+    <div id="decoded-date"></div>
+  </div>
+
+  <div id="speed-indicator">
+    <div id="speed-txt">VEL: 1.0x</div>
+    <div id="btn-count">BOTÕES: 2</div>
+    <div id="gravity-mode">GRAVIDADE: OFF</div>
+  </div>
+
+  <div id="gravity-info">◉ BURACOS NEGROS: <span id="bh-count">0</span></div>
+
+  <div id="bottom-hud">
+    <div id="instructions">24 bits: 8 dia + 8 mês + 8 ano | clique VALIDAR para confirmar</div>
+  </div>
+
+  <div id="saved-log"></div>
+  <div id="lie-tooltip"></div>
+  <div id="invert-warning">⚠ ZONA INVERTIDA — BITS ESPELHADOS ⚠</div>
+  <div id="fake-progress">
+    <div id="fake-progress-label">CARREGANDO FÍSICA...</div>
+    <div id="fake-progress-bar"><div id="fake-progress-fill"></div></div>
+  </div>
+
+  <button id="validate-btn">▶ VALIDAR DATA ◀</button>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx    = canvas.getContext('2d');
+    let W = window.innerWidth, H = window.innerHeight;
+    canvas.width = W; canvas.height = H;
+    window.addEventListener('resize', () => {
+      W = window.innerWidth; H = window.innerHeight;
+      canvas.width = W; canvas.height = H;
+    });
+
+    // ─── CONSTANTS ────────────────────────────────────────────────
+    const MARGIN        = 75;
+    const BTN_R         = 20;
+    const MOUSE_FLEE_R  = 170;
+    const MOUSE_FLEE_F  = 1500;
+    const BASE_SPEED    = 500;
+    const MAX_BUTTONS   = 9000;
+    const COLOR_TOGGLE  = 0.7;
+    const SPEED_TICK    = 8;
+    const EASY_INTERVAL = 12;
+    const EASY_DUR      = 3;
+    const G             = 18000;
+    const BH_CAPTURE_R  = 22;
+    const MAX_BH        = 5;
+    const TOTAL_BITS    = 24;  // 8 day + 8 month + 8 year
+
+    // ─── STATE ────────────────────────────────────────────────────
+    let mouse     = { x:-9999, y:-9999 };
+    let realMouse = { x:-9999, y:-9999 };
+    let cursorOffset = { x:0, y:0 };
+    let nextOffsetTimer = 0;
+
+    let buttons    = [];
+    let blackHoles = [];
+    let particles  = [];
+
+    let colorState  = 'GREEN';
+    let speedMult   = 1.0;
+    let easyMode    = false;
+    let binaryInput = '';
+    let timerVal    = 30;
+    let shake       = 0;
+    let bgHue       = 230;
+    let lastTime    = 0;
+    let validating  = false;
+    let colorTimer  = 0;
+    let speedTimer  = 0;
+    let easyTimer   = 0;
+    let easyDurTimer = 0;
+    let gravityEnabled = false;
+    let gravityTimer   = 0;
+    const GRAVITY_INTERVAL = 15;
+    let invertClicks = false;
+    let invertTimer  = 0;
+    const INVERT_INTERVAL = 22;
+    let fakeProgressVal = 0;
+    let fakeProgressDir = 1;
+
+    // ─── VALIDATE BUTTON TELEPORT ─────────────────────────────────
+    const vBtn = document.getElementById('validate-btn');
+    let vBtnX = W / 2;
+    let vBtnY = H - 80;
+    let vBtnTeleportTimer    = 0;
+    let vBtnTeleportInterval = 2 + Math.random() * 3;
+    const V_FLEE_R = 100;
+
+    function placeVBtn(x, y, instant) {
+      vBtnX = Math.max(130, Math.min(W - 130, x));
+      vBtnY = Math.max(90,  Math.min(H - 70,  y));
+      if (instant) {
+        vBtn.className = 'teleporting';
+        setTimeout(() => {
+          vBtn.style.left = vBtnX + 'px';
+          vBtn.style.top  = vBtnY + 'px';
+          vBtn.className  = 'arrived';
+        }, 80);
+      } else {
+        vBtn.style.left = vBtnX + 'px';
+        vBtn.style.top  = vBtnY + 'px';
+      }
+    }
+
+    function teleportVBtn() {
+      const m  = 140;
+      placeVBtn(m + Math.random()*(W - m*2), m + Math.random()*(H - m*2), true);
+      vBtnTeleportInterval = 1.2 + Math.random() * 4;
+      vBtnTeleportTimer    = 0;
+    }
+    placeVBtn(W/2, H - 80, false);
+
+    function updateVBtnFlee() {
+      const dx   = realMouse.x - vBtnX;
+      const dy   = realMouse.y - vBtnY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < V_FLEE_R && dist > 1) teleportVBtn();
+    }
+
+    vBtn.addEventListener('click', () => {
+      doValidate();
+      setTimeout(teleportVBtn, 200);
+    });
+
+    function doValidate() {
+      if (validating) return;
+      if (binaryInput.length < TOTAL_BITS) {
+        // Flash red — not enough bits
+        vBtn.style.borderColor = '#ff2244';
+        vBtn.style.color       = '#ff2244';
+        vBtn.style.textShadow  = '0 0 10px #ff2244';
+        shake = 0.5;
+        setTimeout(() => {
+          vBtn.style.borderColor = '';
+          vBtn.style.color       = '';
+          vBtn.style.textShadow  = '';
+        }, 500);
+        return;
+      }
+      validating = true;
+      const bin  = binaryInput;
+      const d    = parseInt(bin.slice(0,8),  2);
+      const m    = parseInt(bin.slice(8,16), 2);
+      const yRaw = parseInt(bin.slice(16,24),2);
+      const y    = yRaw + 1900;
+      const ok   = isValidDate(d, m, yRaw);
+      const vmsg = document.getElementById('validation-msg');
+      if (ok) {
+        vmsg.textContent = `✓ VÁLIDA: ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
+        vmsg.style.color       = '#00ff88';
+        vmsg.style.textShadow  = '0 0 20px #00ff88, 0 0 40px #00ff8855';
+        saveDate(d, m, y, bin);
+        for (let i = 0; i < 3; i++) spawnBlackHole();
+      } else {
+        vmsg.textContent = `✗ INVÁLIDA: ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;
+        vmsg.style.color       = '#ff2244';
+        vmsg.style.textShadow  = '0 0 20px #ff2244, 0 0 40px #ff224455';
+        shake = 2;
+        // Spin ALL buttons as punishment
+        for (const b of buttons) {
+          const dir = Math.random() < 0.5 ? 1 : -1;
+          b.angularVel += dir * (6 + Math.random()*16) * Math.PI;
+        }
+      }
+      setTimeout(() => {
+        vmsg.textContent = '';
+        document.getElementById('decoded-date').textContent = '';
+        binaryInput = '';
+        updateBitDisplay();
+        validating  = false;
+      }, 3500);
+    }
+
+    // ─── INDEXEDDB ────────────────────────────────────────────────
+    let db = null;
+    const dbReq = indexedDB.open('chaosUI_v4', 1);
+    dbReq.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('birthdates'))
+        d.createObjectStore('birthdates', { keyPath:'id', autoIncrement:true });
+    };
+    dbReq.onsuccess = e => { db = e.target.result; };
+
+    function saveDate(day, month, year, bin) {
+      if (!db) return;
+      db.transaction('birthdates','readwrite').objectStore('birthdates')
+        .add({ day, month, year, binary:bin, ts:new Date().toISOString() });
+      const log = document.getElementById('saved-log');
+      const el  = document.createElement('div');
+      el.className   = 'save-entry';
+      el.textContent = `\uD83D\uDCBE SALVO: ${String(day).padStart(2,'0')}/${String(month).padStart(2,'0')}/${year}`;
+      log.appendChild(el);
+      setTimeout(() => el.parentNode && el.parentNode.removeChild(el), 5000);
+    }
+
+    // ─── BUTTON FACTORY ───────────────────────────────────────────
+    function mkBtn(x, y, label) {
+      const a  = Math.random() * Math.PI * 2;
+      const sp = 30 + Math.random() * 90;
+      return {
+        x: x ?? (MARGIN + Math.random()*(W-2*MARGIN)),
+        y: y ?? (MARGIN + Math.random()*(H-2*MARGIN)),
+        vx: Math.cos(a)*sp, vy: Math.sin(a)*sp,
+        label: label ?? (Math.random()<.5?'0':'1'),
+        angle: 0, angularVel: 0,
+      };
+    }
+    buttons.push(mkBtn(W/2-70, H/2, '0'));
+    buttons.push(mkBtn(W/2+70, H/2, '1'));
+
+    // ─── BLACK HOLES ──────────────────────────────────────────────
+    function spawnBlackHole() {
+      if (blackHoles.length >= MAX_BH) return;
+      const side = Math.floor(Math.random()*4);
+      let bx,by;
+      if      (side===0){bx=Math.random()*W;by=MARGIN+50;}
+      else if (side===1){bx=Math.random()*W;by=H-MARGIN-50;}
+      else if (side===2){bx=MARGIN+50;by=Math.random()*H;}
+      else              {bx=W-MARGIN-50;by=Math.random()*H;}
+      const life = 8+Math.random()*6;
+      blackHoles.push({x:bx,y:by,mass:300+Math.random()*400,life,maxLife:life,pulseT:0,vx:(Math.random()-.5)*30,vy:(Math.random()-.5)*30});
+    }
+
+    // ─── PARTICLES ────────────────────────────────────────────────
+    function spawnParticles(x,y,color) {
+      for (let i=0;i<18;i++) {
+        const a=Math.random()*Math.PI*2,sp=40+Math.random()*160;
+        particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.6+Math.random()*.4,maxLife:1,r:2+Math.random()*3,color});
+      }
+    }
+    function spawnSpinParticles(x,y) {
+      for (let i=0;i<12;i++) {
+        const a=Math.random()*Math.PI*2,sp=70+Math.random()*130;
+        particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:.35+Math.random()*.25,maxLife:.6,r:2+Math.random()*2.5,color:'#ff8800'});
+      }
+    }
+
+    // ─── HUD — 24 bit ─────────────────────────────────────────────
+    function buildBitCells() {
+      [{id:'day-bits',n:8,cls:'day'},{id:'month-bits',n:8,cls:'month'},{id:'year-bits',n:8,cls:'year'}]
+        .forEach(({id,n,cls}) => {
+          const cont = document.getElementById(id);
+          cont.innerHTML = '';
+          for (let i=0;i<n;i++) {
+            const c = document.createElement('div');
+            c.className = `bit-cell empty ${cls}`;
+            cont.appendChild(c);
+          }
+        });
+    }
+    buildBitCells();
+
+    function updateBitDisplay() {
+      let off = 0;
+      [{id:'day-bits',n:8},{id:'month-bits',n:8},{id:'year-bits',n:8}].forEach(({id,n}) => {
+        const cells = document.getElementById(id).querySelectorAll('.bit-cell');
+        for (let i=0;i<n;i++) {
+          const idx = off+i;
+          if (idx < binaryInput.length) { cells[i].textContent=binaryInput[idx]; cells[i].classList.remove('empty'); }
+          else { cells[i].textContent=''; cells[i].classList.add('empty'); }
+        }
+        off += n;
+      });
+      const dec = document.getElementById('decoded-date');
+      if (binaryInput.length >= 8) {
+        const d    = parseInt(binaryInput.slice(0,8)||'0',2);
+        const m    = binaryInput.length>=16 ? parseInt(binaryInput.slice(8,16),2)  : '??';
+        const yRaw = binaryInput.length>=24 ? parseInt(binaryInput.slice(16,24),2) : '??';
+        const y    = typeof yRaw==='number' ? yRaw+1900 : '??';
+        dec.textContent = `\u2192 DIA:${d}  M\u00CAS:${m}  ANO:${yRaw}+1900=${y}`;
+      } else { dec.textContent=''; }
+    }
+
+    function isValidDate(d,m,yRaw) {
+      const y = yRaw + 1900;
+      if (m<1||m>12) return false;
+      if (d<1)       return false;
+      return d <= new Date(y,m,0).getDate();
+    }
+
+    // ─── INPUT ────────────────────────────────────────────────────
+    function registerBit(bit) {
+      if (validating || binaryInput.length >= TOTAL_BITS) return;
+      if (invertClicks) bit = bit==='0'?'1':'0';
+      binaryInput += bit;
+      updateBitDisplay();
+    }
+
+    // ─── CURSOR SABOTAGE ─────────────────────────────────────────
+    const fakeCursor = document.getElementById('fake-cursor');
+    function randomizeCursorOffset() {
+      const a=Math.random()*Math.PI*2, d=15+Math.random()*40;
+      cursorOffset.x=Math.cos(a)*d; cursorOffset.y=Math.sin(a)*d;
+    }
+    randomizeCursorOffset();
+    window.addEventListener('mousemove', e => {
+      realMouse.x=e.clientX; realMouse.y=e.clientY;
+      mouse.x=e.clientX; mouse.y=e.clientY;
+      fakeCursor.style.left=(e.clientX+cursorOffset.x)+'px';
+      fakeCursor.style.top =(e.clientY+cursorOffset.y)+'px';
+    });
+    window.addEventListener('mouseleave',()=>{mouse.x=-9999;mouse.y=-9999;realMouse.x=-9999;realMouse.y=-9999;});
+
+    // ─── TOOLTIPS ────────────────────────────────────────────────
+    const LIES=['CLIQUE AQUI \u2192 registra bit','ESTE \u00e9 o bot\u00e3o correto!',
+      '0 = zero, 1 = um (confirmar?)','\u00d3timo progresso! Continue.',
+      'ATEN\u00c7\u00c3O: bot\u00e3o 0 desabilitado','Pressione DUAS VEZES para confirmar',
+      '\u2190 esse bot\u00e3o reseta tudo','S\u00f3 mais 3 cliques!',
+      'VALIDAR fica nessa dire\u00e7\u00e3o \u2192','Bot\u00e3o 1 = bit inv\u00e1lido aqui',
+    ];
+    const lieTooltip = document.getElementById('lie-tooltip');
+    let tooltipTimer=0, tooltipVisible=false;
+    function showRandomTooltip(){
+      if(!buttons.length)return;
+      const b=buttons[Math.floor(Math.random()*Math.min(buttons.length,20))];
+      lieTooltip.textContent=LIES[Math.floor(Math.random()*LIES.length)];
+      lieTooltip.style.display='block';
+      lieTooltip.style.left=(b.x+25)+'px';
+      lieTooltip.style.top =(b.y-10)+'px';
+      tooltipVisible=true;
+    }
+    function hideTooltip(){lieTooltip.style.display='none';tooltipVisible=false;}
+
+    // ─── CLICK ───────────────────────────────────────────────────
+    canvas.addEventListener('click', e => {
+      const cx=e.clientX,cy=e.clientY;
+      let hit=-1;
+      for(let i=buttons.length-1;i>=0;i--){
+        const b=buttons[i],dx=b.x-cx,dy=b.y-cy;
+        if(dx*dx+dy*dy<=(BTN_R+4)*(BTN_R+4)){hit=i;break;}
+      }
+      bgHue=Math.random()*360;
+      if(hit>=0){
+        if(colorState==='RED'){
+          shake=Math.max(shake,1.2);
+          // Rotation punishment — hit btn spins hard, neighbours spin less
+          const ox=buttons[hit].x,oy=buttons[hit].y;
+          for(let i=0;i<buttons.length;i++){
+            const b=buttons[i];
+            const dx2=b.x-ox,dy2=b.y-oy;
+            const dist=Math.sqrt(dx2*dx2+dy2*dy2);
+            const factor=dist<1?1:Math.max(0,1-dist/260);
+            if(factor>0.04){
+              const dir=Math.random()<.5?1:-1;
+              b.angularVel+=dir*(9+Math.random()*22)*factor*Math.PI;
+            }
+          }
+          spawnSpinParticles(buttons[hit].x,buttons[hit].y);
+          if(blackHoles.length<MAX_BH)
+            blackHoles.push({x:cx+(Math.random()-.5)*80,y:cy+(Math.random()-.5)*80,mass:200,life:5,maxLife:5,pulseT:0,vx:0,vy:0});
+        } else {
+          registerBit(buttons[hit].label);
+          const bx=buttons[hit].x,by=buttons[hit].y;
+          for(let i=0;i<50;i++){
+            if(buttons.length>=MAX_BUTTONS)break;
+            buttons.push(mkBtn(
+              Math.max(MARGIN,Math.min(W-MARGIN,bx+(Math.random()-.5)*120)),
+              Math.max(MARGIN,Math.min(H-MARGIN,by+(Math.random()-.5)*120))
+            ));
+          }
+        }
+      }
+    });
+    canvas.addEventListener('touchstart',e=>{
+      e.preventDefault();
+      const t=e.touches[0];
+      canvas.dispatchEvent(new MouseEvent('click',{clientX:t.clientX,clientY:t.clientY,bubbles:true}));
+    },{passive:false});
+
+    // ─── PHYSICS ─────────────────────────────────────────────────
+    function physicsUpdate(dt){
+      const ef=easyMode?0.18:speedMult;
+
+      for(const bh of blackHoles){
+        bh.pulseT+=dt*3; bh.life-=dt;
+        bh.x+=bh.vx*dt; bh.y+=bh.vy*dt;
+        bh.vx+=(W/2-bh.x)*.5*dt; bh.vy+=(H/2-bh.y)*.5*dt;
+        bh.vx*=.98; bh.vy*=.98;
+      }
+      blackHoles=blackHoles.filter(bh=>bh.life>0);
+      document.getElementById('bh-count').textContent=blackHoles.length;
+
+      let cmx=0,cmy=0;
+      for(const b of buttons){cmx+=b.x;cmy+=b.y;}
+      cmx/=buttons.length; cmy/=buttons.length;
+
+      const toRemove=[];
+      for(let i=0;i<buttons.length;i++){
+        const b=buttons[i];
+        let ax=0,ay=0;
+
+        const mdx=b.x-mouse.x,mdy=b.y-mouse.y,md2=mdx*mdx+mdy*mdy;
+        if(md2<MOUSE_FLEE_R*MOUSE_FLEE_R&&md2>.01){
+          const md=Math.sqrt(md2),f=MOUSE_FLEE_F*(1-md/MOUSE_FLEE_R);
+          ax+=(mdx/md)*f; ay+=(mdy/md)*f;
+        }
+        const cdx=b.x-cmx,cdy=b.y-cmy,cd2=cdx*cdx+cdy*cdy;
+        if(cd2>1){
+          const cd=Math.sqrt(cd2),sign=colorState==='RED'?-1:1;
+          ax+=(cdx/cd)*150*sign; ay+=(cdy/cd)*150*sign;
+        }
+        if(gravityEnabled){
+          for(const bh of blackHoles){
+            const gx=bh.x-b.x,gy=bh.y-b.y,r2=gx*gx+gy*gy;
+            if(r2<.01)continue;
+            const r=Math.sqrt(r2),f=Math.min(G*bh.mass/r2,6000);
+            ax+=(gx/r)*f; ay+=(gy/r)*f;
+            if(r<BH_CAPTURE_R+BTN_R){toRemove.push(i);spawnParticles(b.x,b.y,'#ff6600');break;}
+          }
+          if(buttons.length<200){
+            for(let j=0;j<buttons.length;j++){
+              if(j===i)continue;
+              const ob=buttons[j],gx2=ob.x-b.x,gy2=ob.y-b.y,r2b=gx2*gx2+gy2*gy2;
+              if(r2b<400)continue;
+              const rb=Math.sqrt(r2b),f2=Math.min(G*.015/r2b,80);
+              ax+=(gx2/rb)*f2; ay+=(gy2/rb)*f2;
+            }
+          }
+        }
+
+        b.vx+=ax*dt; b.vy+=ay*dt;
+        const maxSpd=BASE_SPEED*ef,sp2=b.vx*b.vx+b.vy*b.vy;
+        if(sp2>maxSpd*maxSpd){const sp=Math.sqrt(sp2);b.vx=(b.vx/sp)*maxSpd;b.vy=(b.vy/sp)*maxSpd;}
+        const sp=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
+        if(sp<15&&sp>.0001){b.vx=(b.vx/sp)*15;b.vy=(b.vy/sp)*15;}
+        else if(sp<.01){b.vx=10*(Math.random()-.5);b.vy=10*(Math.random()-.5);}
+
+        b.x+=b.vx*dt; b.y+=b.vy*dt;
+
+        // Rotation
+        b.angle+=b.angularVel*dt;
+        b.angularVel*=Math.pow(0.012,dt);
+        if(Math.abs(b.angularVel)<.05)b.angularVel=0;
+
+        if(b.x<MARGIN+BTN_R){b.x=MARGIN+BTN_R;b.vx=Math.abs(b.vx)*.85;}
+        if(b.x>W-MARGIN-BTN_R){b.x=W-MARGIN-BTN_R;b.vx=-Math.abs(b.vx)*.85;}
+        if(b.y<MARGIN+BTN_R){b.y=MARGIN+BTN_R;b.vy=Math.abs(b.vy)*.85;}
+        if(b.y>H-MARGIN-BTN_R){b.y=H-MARGIN-BTN_R;b.vy=-Math.abs(b.vy)*.85;}
+      }
+
+      const removeSet=new Set(toRemove);
+      buttons=buttons.filter((_,i)=>!removeSet.has(i));
+      if(buttons.length<2){buttons.push(mkBtn(null,null,'0'));buttons.push(mkBtn(null,null,'1'));}
+
+      for(const p of particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.93;p.vy*=.93;}
+      particles=particles.filter(p=>p.life>0);
+      if(buttons.length>MAX_BUTTONS)buttons.splice(0,buttons.length-MAX_BUTTONS);
+    }
+
+    // ─── DRAW ─────────────────────────────────────────────────────
+    function draw(){
+      ctx.save();
+      let sx=0,sy=0;
+      if(shake>0){sx=(Math.random()-.5)*shake*28;sy=(Math.random()-.5)*shake*22;ctx.translate(sx,sy);}
+
+      ctx.fillStyle=`hsl(${bgHue},55%,4%)`;
+      ctx.fillRect(-sx-60,-sy-60,W+120,H+120);
+
+      ctx.save();ctx.globalAlpha=.03;ctx.fillStyle='#000';
+      for(let y=0;y<H;y+=4)ctx.fillRect(0,y,W,2);
+      ctx.restore();
+
+      ctx.save();ctx.strokeStyle=`hsla(${bgHue+120},80%,60%,0.025)`;ctx.lineWidth=1;
+      for(let x=0;x<W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+      for(let y=0;y<H;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+      ctx.restore();
+
+      ctx.save();ctx.setLineDash([6,12]);ctx.strokeStyle='rgba(255,140,0,0.08)';ctx.lineWidth=1;
+      ctx.strokeRect(MARGIN,MARGIN,W-2*MARGIN,H-2*MARGIN);ctx.setLineDash([]);ctx.restore();
+
+      // Black holes
+      if(gravityEnabled){
+        for(const bh of blackHoles){
+          const alpha=Math.min(1,bh.life/bh.maxLife);
+          const pulsed=1+Math.sin(bh.pulseT)*.15;
+          const innerR=18*pulsed, outerR=48*pulsed;
+          for(let ring=1;ring<=5;ring++){
+            ctx.save();ctx.globalAlpha=alpha*.05/ring;ctx.strokeStyle='#ff6600';ctx.lineWidth=1;
+            ctx.beginPath();ctx.arc(bh.x,bh.y,ring*60*(bh.mass/400),0,Math.PI*2);ctx.stroke();ctx.restore();
+          }
+          ctx.save();ctx.globalAlpha=alpha*.35;
+          const g=ctx.createRadialGradient(bh.x,bh.y,innerR,bh.x,bh.y,outerR);
+          g.addColorStop(0,'#ff6600cc');g.addColorStop(.4,'#ff220088');g.addColorStop(1,'transparent');
+          ctx.fillStyle=g;ctx.beginPath();ctx.arc(bh.x,bh.y,outerR,0,Math.PI*2);ctx.fill();ctx.restore();
+          ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle='#000';ctx.shadowColor='#ff6600';ctx.shadowBlur=20+Math.sin(bh.pulseT)*8;
+          ctx.beginPath();ctx.arc(bh.x,bh.y,innerR,0,Math.PI*2);ctx.fill();ctx.restore();
+          ctx.save();ctx.globalAlpha=alpha*.4;
+          const jl=80+Math.sin(bh.pulseT*2)*20;
+          const jg1=ctx.createLinearGradient(bh.x,bh.y-innerR,bh.x,bh.y-innerR-jl);
+          jg1.addColorStop(0,'#ff6600');jg1.addColorStop(1,'transparent');
+          ctx.strokeStyle=jg1;ctx.lineWidth=4;
+          ctx.beginPath();ctx.moveTo(bh.x,bh.y-innerR);ctx.lineTo(bh.x,bh.y-innerR-jl);ctx.stroke();
+          const jg2=ctx.createLinearGradient(bh.x,bh.y+innerR,bh.x,bh.y+innerR+jl);
+          jg2.addColorStop(0,'#ff6600');jg2.addColorStop(1,'transparent');
+          ctx.strokeStyle=jg2;ctx.beginPath();ctx.moveTo(bh.x,bh.y+innerR);ctx.lineTo(bh.x,bh.y+innerR+jl);ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // Particles
+      for(const p of particles){
+        const t=p.life/p.maxLife;
+        ctx.save();ctx.globalAlpha=t*.9;ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=6;
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r*t,0,Math.PI*2);ctx.fill();ctx.restore();
+      }
+
+      // Buttons with per-button rotation
+      const isRed=colorState==='RED';
+      const btnFill=isRed?'#ff2244':'#00ff88';
+      const btnGlowO=isRed?'#ff0033':'#00ffcc';
+
+      for(const b of buttons){
+        ctx.save();
+        ctx.translate(b.x,b.y);
+        ctx.rotate(b.angle);
+        const spinning=Math.abs(b.angularVel)>0.3;
+        ctx.shadowColor=spinning?'#ff8800':btnGlowO;
+        ctx.shadowBlur =spinning?Math.min(Math.abs(b.angularVel)*1.5,40):14;
+        ctx.fillStyle  =spinning
+          ? `hsl(${(Date.now()*0.3+b.x)%360},100%,${55+Math.min(Math.abs(b.angularVel)*1.5,30)}%)`
+          : btnFill;
+        ctx.beginPath();ctx.arc(0,0,BTN_R,0,Math.PI*2);ctx.fill();
+        ctx.shadowBlur=0;ctx.globalAlpha=.3;ctx.fillStyle='#fff';
+        ctx.beginPath();ctx.arc(-BTN_R*.25,-BTN_R*.25,BTN_R*.45,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=1;ctx.fillStyle='#000';
+        ctx.font=`bold ${BTN_R*1.1}px 'Courier New'`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        const lbl=invertClicks?(b.label==='0'?'1':'0'):b.label;
+        ctx.fillText(lbl,0,1);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    // ─── FAKE PROGRESS ────────────────────────────────────────────
+    function updateFakeProgress(dt){
+      fakeProgressVal+=fakeProgressDir*dt*(15+Math.random()*25);
+      if(fakeProgressVal>=100){fakeProgressVal=100;fakeProgressDir=-1;}
+      if(fakeProgressVal<=0)  {fakeProgressVal=0;  fakeProgressDir= 1;}
+      document.getElementById('fake-progress-fill').style.width=fakeProgressVal+'%';
+      if(Math.random()<.01){
+        const ls=['CARREGANDO F\u00EDSICA...','CALCULANDO GRAVIDADE...','OTIMIZANDO BITS...','SINCRONIZANDO CAOS...','PROCURANDO BOT\u00C3O VALIDAR...','COMPRIMINDO ESPA\u00C7O-TEMPO...'];
+        document.getElementById('fake-progress-label').textContent=ls[Math.floor(Math.random()*ls.length)];
+      }
+    }
+
+    // ─── MAIN LOOP ────────────────────────────────────────────────
+    function loop(ts){
+      if(!lastTime)lastTime=ts;
+      const dt=Math.min((ts-lastTime)/1000,.05);
+      lastTime=ts;
+
+      colorTimer+=dt;
+      if(colorTimer>=COLOR_TOGGLE){
+        colorTimer=0;
+        colorState=colorState==='GREEN'?'RED':'GREEN';
+        const pill=document.getElementById('state-pill');
+        if(colorState==='GREEN'){
+          pill.textContent='\u25C9 VERDE \u2014 CLIQUE V\u00C1LIDO';
+          pill.className='state-pill green';
+          pill.style.color='#00ff88';pill.style.borderColor='#00ff8866';
+          pill.style.background='rgba(0,255,136,0.1)';pill.style.textShadow='0 0 10px #00ff88';
+        }else{
+          pill.textContent='\u25C9 VERMELHO \u2014 CLIQUE ERRADO';
+          pill.className='state-pill red';
+          pill.style.color='#ff2244';pill.style.borderColor='#ff224466';
+          pill.style.background='rgba(255,34,68,0.1)';pill.style.textShadow='0 0 10px #ff2244';
+        }
+      }
+
+      speedTimer+=dt;
+      if(speedTimer>=SPEED_TICK){speedTimer=0;speedMult=Math.min(speedMult*1.12,6);document.getElementById('speed-txt').textContent=`VEL: ${speedMult.toFixed(1)}x`;}
+
+      if(easyMode){easyDurTimer-=dt;if(easyDurTimer<=0){easyMode=false;easyTimer=0;document.getElementById('easy-banner').style.display='none';}}
+      else{easyTimer+=dt;if(easyTimer>=EASY_INTERVAL){easyMode=true;easyDurTimer=EASY_DUR;document.getElementById('easy-banner').style.display='block';}}
+
+      gravityTimer+=dt;
+      if(gravityTimer>=GRAVITY_INTERVAL){
+        gravityTimer=0;gravityEnabled=!gravityEnabled;
+        document.getElementById('gravity-mode').textContent=`GRAVIDADE: ${gravityEnabled?'ON':'OFF'}`;
+        document.getElementById('gravity-mode').style.color=gravityEnabled?'#ff6600aa':'#ffffff33';
+        if(gravityEnabled){spawnBlackHole();spawnBlackHole();}
+      }
+
+      invertTimer+=dt;
+      if(invertTimer>=INVERT_INTERVAL){
+        invertTimer=0;invertClicks=!invertClicks;
+        const w=document.getElementById('invert-warning');
+        if(invertClicks){w.style.display='block';setTimeout(()=>w.style.display='none',2000);}
+      }
+
+      nextOffsetTimer-=dt;
+      if(nextOffsetTimer<=0){nextOffsetTimer=4+Math.random()*5;randomizeCursorOffset();}
+
+      tooltipTimer+=dt;
+      if(tooltipTimer>3.5){tooltipTimer=0;if(tooltipVisible)hideTooltip();else showRandomTooltip();}
+
+      if(gravityEnabled&&Math.random()<.003)spawnBlackHole();
+
+      // Validate button teleport + flee
+      vBtnTeleportTimer+=dt;
+      if(vBtnTeleportTimer>=vBtnTeleportInterval)teleportVBtn();
+      updateVBtnFlee();
+
+      // Update validate button appearance based on readiness
+      if(binaryInput.length>=TOTAL_BITS&&!validating){
+        vBtn.style.borderColor='#00ffcc';
+        vBtn.style.color='#00ffcc';
+        vBtn.style.textShadow='0 0 12px #00ffcc';
+        vBtn.style.boxShadow='0 0 20px #00ffcc66,inset 0 0 10px rgba(0,255,204,0.05)';
+      }else{
+        vBtn.style.borderColor='#ffffff22';
+        vBtn.style.color='#ffffff33';
+        vBtn.style.textShadow='none';
+        vBtn.style.boxShadow='none';
+      }
+
+      timerVal-=dt;
+      if(timerVal<=0){
+        timerVal=30;
+        if(!validating){binaryInput='';updateBitDisplay();document.getElementById('validation-msg').textContent='';document.getElementById('decoded-date').textContent='';}
+      }
+      const tv=document.getElementById('timer'),ceil=Math.ceil(timerVal);
+      tv.textContent=ceil;tv.className=ceil<=10?'urgent':'';
+      tv.style.color=ceil<=10?'#ff0000':'#ff4444';
+      tv.style.textShadow=ceil<=10?'0 0 30px #ff0000':'0 0 20px #ff4444';
+
+      if(shake>0){shake-=dt*4;if(shake<0)shake=0;}
+      document.getElementById('btn-count').textContent=`BOT\u00D5ES: ${buttons.length}`;
+      updateFakeProgress(dt);
+      physicsUpdate(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    updateBitDisplay();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
