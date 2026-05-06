@@ -137,10 +137,10 @@ function toast(msg, icon = '✅', duration = 3500) {
 }
 
 /* =============================================
-   AUTH
+   AUTH (Refatorado para Backend PHP)
 ============================================= */
-let users       = JSON.parse(localStorage.getItem('cs_users')   || '[]');
 let currentUser = JSON.parse(localStorage.getItem('cs_session') || 'null');
+const API_BASE = '/api';
 
 function showSession() {
   if (!currentUser) return;
@@ -151,7 +151,7 @@ function showSession() {
   document.getElementById('session-avatar').textContent = initials;
 }
 
-document.getElementById('btn-cadastro').addEventListener('click', () => {
+document.getElementById('btn-cadastro').addEventListener('click', async () => {
   const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const pass  = document.getElementById('reg-pass').value;
@@ -162,48 +162,66 @@ document.getElementById('btn-cadastro').addEventListener('click', () => {
     msg.className   = 'form-msg error';
     return;
   }
-  if (users.find(u => u.email === email)) {
-    msg.textContent = '⚠ E-mail já cadastrado.';
-    msg.className   = 'form-msg error';
-    return;
-  }
-  if (pass.length < 6) {
-    msg.textContent = '⚠ Senha muito curta (mín. 6 caracteres).';
-    msg.className   = 'form-msg error';
-    return;
-  }
 
-  const user = { name, email, pass };
-  users.push(user);
-  localStorage.setItem('cs_users',   JSON.stringify(users));
-  currentUser = user;
-  localStorage.setItem('cs_session', JSON.stringify(user));
-  msg.textContent = '✓ Conta criada com sucesso!';
-  msg.className   = 'form-msg success';
-  showSession();
-  toast(`Bem-vindo, ${name}! 🎉`, '👋');
+  try {
+    const response = await fetch(`${API_BASE}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password: pass })
+    });
+    
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      msg.textContent = '✓ Conta criada com sucesso! Faça login para continuar.';
+      msg.className   = 'form-msg success';
+      toast(`Conta criada! Agora faça seu login. 🎉`, '✅');
+    } else {
+      msg.textContent = '⚠ ' + result.message;
+      msg.className   = 'form-msg error';
+    }
+  } catch (error) {
+    msg.textContent = '⚠ Erro ao conectar com o servidor.';
+    msg.className   = 'form-msg error';
+  }
 });
 
-document.getElementById('btn-login').addEventListener('click', () => {
+document.getElementById('btn-login').addEventListener('click', async () => {
   const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-pass').value;
   const msg   = document.getElementById('msg-login');
-  const user  = users.find(u => u.email === email && u.pass === pass);
 
-  if (!user) {
-    msg.textContent = '⚠ E-mail ou senha incorretos.';
+  try {
+    const response = await fetch(`${API_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      currentUser = result.data;
+      localStorage.setItem('cs_session', JSON.stringify(currentUser));
+      msg.textContent = '✓ Login realizado!';
+      msg.className   = 'form-msg success';
+      showSession();
+      toast(`Olá de volta, ${currentUser.name}!`, '🔐');
+    } else {
+      msg.textContent = '⚠ ' + result.message;
+      msg.className   = 'form-msg error';
+    }
+  } catch (error) {
+    msg.textContent = '⚠ Erro ao conectar com o servidor.';
     msg.className   = 'form-msg error';
-    return;
   }
-  currentUser = user;
-  localStorage.setItem('cs_session', JSON.stringify(user));
-  msg.textContent = '✓ Login realizado!';
-  msg.className   = 'form-msg success';
-  showSession();
-  toast(`Olá de volta, ${user.name}!`, '🔐');
 });
 
-document.getElementById('btn-logout').addEventListener('click', () => {
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  try {
+    await fetch(`${API_BASE}/logout`, { method: 'POST' });
+  } catch (e) {}
+  
   currentUser = null;
   localStorage.removeItem('cs_session');
   document.getElementById('session-bar').style.display = 'none';
@@ -213,6 +231,7 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 });
 
 if (currentUser) showSession();
+
 
 /* =============================================
    MÓDULOS

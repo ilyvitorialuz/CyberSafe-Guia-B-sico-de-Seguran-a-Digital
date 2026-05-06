@@ -1,9 +1,11 @@
 /**
- * controller.js - Ponte entre o HTML e o Banco de Dados (IndexedDB)
+ * controller.js - Ponte entre o HTML e o Backend PHP
  * 
  * Este arquivo escuta eventos do formulário de contato, captura os dados,
- * salva no banco de dados através do db.js e exibe os dados salvos.
+ * envia para o backend PHP e exibe os dados salvos vindo do servidor.
  */
+
+const API_BASE = '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     const btnContact = document.getElementById('btn-contact');
@@ -34,55 +36,64 @@ document.addEventListener('DOMContentLoaded', () => {
                 nome: nome,
                 email: email,
                 mensagem: mensagem,
-                data: new Promise(resolve => resolve(new Date().toLocaleString())).then(d => d), // Apenas para exemplo de Promise se necessário, mas simplificando:
-                dataCriacao: new Date().toLocaleString(),
                 categoria: 'Contato Geral'
             };
 
             try {
-                // Envia para a função de salvar no db.js
-                await adicionarItem(novoContato);
+                // Envia para o backend PHP
+                const response = await fetch(`${API_BASE}/contacts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(novoContato)
+                });
                 
-                // Limpa o formulário após salvar
-                contactName.value = '';
-                contactEmail.value = '';
-                contactMsg.value = '';
+                const result = await response.json();
 
-                alert('Mensagem enviada e salva com sucesso no banco de dados local!');
-                
-                // Atualiza a listagem na tela
-                listarContatos();
+                if (result.status === 'success') {
+                    // Limpa o formulário após salvar
+                    contactName.value = '';
+                    contactEmail.value = '';
+                    contactMsg.value = '';
+
+                    alert('Mensagem enviada e salva com sucesso no servidor!');
+                    
+                    // Atualiza a listagem na tela
+                    listarContatos();
+                } else {
+                    alert('Erro ao enviar: ' + result.message);
+                }
             } catch (error) {
                 console.error('Erro ao processar o formulário:', error);
-                alert('Ocorreu um erro ao salvar os dados. Verifique o console.');
+                alert('Ocorreu um erro ao conectar com o servidor.');
             }
         });
     }
 });
 
 /**
- * Busca os dados salvos no IndexedDB e exibe no console e opcionalmente na tela.
+ * Busca os dados salvos no Backend e exibe na tela.
  */
 async function listarContatos() {
     try {
-        const contatos = await buscarItens();
-        console.log('--- Lista de Contatos Salvos no IndexedDB ---');
-        console.table(contatos);
-
-        // Opcional: Se quiser exibir em algum lugar do HTML, podemos criar um container dinamicamente
-        exibirContatosNaTela(contatos);
+        const response = await fetch(`${API_BASE}/contacts`);
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            console.log('--- Lista de Contatos Salvos no Backend ---');
+            console.table(result.data);
+            exibirContatosNaTela(result.data);
+        }
     } catch (error) {
         console.error('Erro ao listar contatos:', error);
     }
 }
 
 /**
- * Cria um elemento visual para mostrar os contatos salvos (para fins de teste local)
+ * Cria um elemento visual para mostrar os contatos salvos
  */
 function exibirContatosNaTela(contatos) {
     let container = document.getElementById('contatos-salvos-container');
     
-    // Se o container não existir, cria um abaixo do formulário de contato
     if (!container) {
         const contatoSection = document.getElementById('contato');
         if (contatoSection) {
@@ -95,7 +106,7 @@ function exibirContatosNaTela(contatos) {
             container.style.border = '1px solid rgba(255, 255, 255, 0.1)';
             
             const title = document.createElement('h3');
-            title.textContent = 'Mensagens Salvas (LocalDB)';
+            title.textContent = 'Mensagens Recentes (Servidor)';
             title.style.fontSize = '1rem';
             title.style.marginBottom = '10px';
             title.style.color = 'var(--accent)';
@@ -106,12 +117,11 @@ function exibirContatosNaTela(contatos) {
     }
 
     if (container) {
-        // Limpa a lista atual (exceto o título)
         const title = container.querySelector('h3');
         container.innerHTML = '';
         container.appendChild(title);
 
-        if (contatos.length === 0) {
+        if (!contatos || contatos.length === 0) {
             const emptyMsg = document.createElement('p');
             emptyMsg.textContent = 'Nenhuma mensagem salva ainda.';
             emptyMsg.style.fontSize = '0.85rem';
@@ -131,8 +141,8 @@ function exibirContatosNaTela(contatos) {
             item.style.paddingBottom = '10px';
             item.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
             item.innerHTML = `
-                <strong>${c.nome}</strong> (${c.dataCriacao})<br>
-                <span style="opacity: 0.8;">${c.mensagem}</span>
+                <strong>${c.name}</strong> (${new Date(c.created_at).toLocaleString('pt-BR')})<br>
+                <span style="opacity: 0.8;">${c.message}</span>
                 <button onclick="removerContato(${c.id})" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:0.7rem; margin-left:10px;">[Excluir]</button>
             `;
             list.appendChild(item);
@@ -141,12 +151,21 @@ function exibirContatosNaTela(contatos) {
     }
 }
 
-/**
- * Função global para permitir exclusão via atributo onclick (já que não usamos módulos)
- */
 window.removerContato = async function(id) {
     if (confirm('Deseja realmente excluir esta mensagem?')) {
-        await deletarItem(id);
-        listarContatos();
+        try {
+            const response = await fetch(`${API_BASE}/contacts/${id}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                listarContatos();
+            } else {
+                alert('Erro ao excluir: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Erro ao excluir:', error);
+        }
     }
 };
+

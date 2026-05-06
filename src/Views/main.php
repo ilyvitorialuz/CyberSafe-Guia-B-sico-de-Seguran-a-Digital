@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
@@ -436,8 +436,7 @@
   <p>© 2026 CyberSafe — Projeto Educativo de Segurança Digital</p>
 </footer>
 
-<script src="script.js"></script>
-<script src="db.js"></script>
-<script src="controller.js"></script>
+<script src="assets/js/script.js"></script>
+<script src="assets/js/controller.js"></script>
 </body>
 </html>
