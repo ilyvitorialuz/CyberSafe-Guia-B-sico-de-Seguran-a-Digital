@@ -1,0 +1,11 @@
+[database]
+host = localhost
+port = 3306
+name = cybersafe_db
+user = root
+password = 
+charset = utf8mb4
+
+[app]
+env = development
+debug = true

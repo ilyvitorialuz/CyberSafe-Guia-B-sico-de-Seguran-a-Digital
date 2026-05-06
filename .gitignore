@@ -1,0 +1,32 @@
+# Environment variables
+.env
+config/config.ini
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Dependencies
+vendor/
+node_modules/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+/tmp/
+/temp/
+*.tmp
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Build artifacts
+/build/
+/dist/
