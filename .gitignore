@@ -1,0 +1,5 @@
+.env
+cybersafe.db
+/vendor/
+*.log
+.DS_Store
