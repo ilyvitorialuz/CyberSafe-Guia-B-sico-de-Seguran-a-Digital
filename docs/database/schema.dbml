@@ -1,0 +1,45 @@
+// Schema do banco de dados para o Projeto CyberSafe
+// Modelado para suportar Usuários, Módulos, Quizzes e Progresso
+
+Table users {
+  id integer [primary key, increment]
+  name varchar(255) [not null]
+  email varchar(255) [unique, not null]
+  password varchar(255) [not null]
+  created_at timestamp [default: `now()`]
+}
+
+Table contacts {
+  id integer [primary key, increment]
+  name varchar(255) [not null]
+  email varchar(255) [not null]
+  message text [not null]
+  category varchar(100) [default: 'Geral']
+  created_at timestamp [default: `now()`]
+}
+
+Table modules {
+  id integer [primary key, increment]
+  title varchar(255) [not null]
+  description text
+}
+
+Table quizzes {
+  id integer [primary key, increment]
+  module_id integer [ref: > modules.id]
+  question text [not null]
+  option_a varchar(255) [not null]
+  option_b varchar(255) [not null]
+  option_c varchar(255) [not null]
+  option_d varchar(255) [not null]
+  correct_option char(1) [not null]
+}
+
+Table progress {
+  id integer [primary key, increment]
+  user_id integer [ref: > users.id]
+  module_id integer [ref: > modules.id]
+  completed boolean [default: false]
+  score integer
+  updated_at timestamp [default: `now()`]
+}
