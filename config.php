@@ -1,6 +1,5 @@
 <?php
 
-namespace App;
 
 class Config
 {
@@ -9,7 +8,7 @@ class Config
 
     private function __construct()
     {
-        $this->loadEnv(__DIR__ . '/../.env');
+        $this->loadEnv(__DIR__ . '/.env');
     }
 
     public static function getInstance()

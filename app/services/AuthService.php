@@ -1,9 +1,6 @@
 <?php
 
-namespace App\Services;
 
-use App\Repositories\UserRepository;
-use App\Exceptions\BusinessRuleException;
 
 class AuthService
 {

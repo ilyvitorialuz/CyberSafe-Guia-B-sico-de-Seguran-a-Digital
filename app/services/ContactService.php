@@ -1,9 +1,6 @@
 <?php
 
-namespace App\Services;
 
-use App\Repositories\ContactRepository;
-use App\Exceptions\BusinessRuleException;
 
 class ContactService
 {

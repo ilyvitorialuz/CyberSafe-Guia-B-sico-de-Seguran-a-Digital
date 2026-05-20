@@ -1,6 +1,5 @@
 <?php
 
-namespace App;
 
 class Router
 {
@@ -46,19 +45,19 @@ class Router
 
     private function resolve($controllerName)
     {
-        if ($controllerName === \App\Controllers\AuthController::class) {
-            $repo = new \App\Repositories\UserRepository();
-            $service = new \App\Services\AuthService($repo);
+        if ($controllerName === AuthController::class) {
+            $repo = new UserRepository();
+            $service = new AuthService($repo);
             return new $controllerName($service);
         }
 
-        if ($controllerName === \App\Controllers\ContactController::class) {
-            $repo = new \App\Repositories\ContactRepository();
-            $service = new \App\Services\ContactService($repo);
+        if ($controllerName === ContactController::class) {
+            $repo = new ContactRepository();
+            $service = new ContactService($repo);
             return new $controllerName($service);
         }
 
-        if ($controllerName === \App\Controllers\HomeController::class) {
+        if ($controllerName === HomeController::class) {
             return new $controllerName();
         }
 

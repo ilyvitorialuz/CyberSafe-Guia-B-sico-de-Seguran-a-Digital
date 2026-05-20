@@ -1,9 +1,5 @@
 <?php
 
-namespace App;
-
-use PDO;
-use PDOException;
 
 class Database
 {
@@ -21,7 +17,7 @@ class Database
 
         try {
             if ($driver === 'sqlite') {
-                $this->connection = new PDO("sqlite:" . __DIR__ . "/../" . $dbName);
+                $this->connection = new PDO("sqlite:" . __DIR__ . "/../database/" . $dbName);
             } else {
                 $this->connection = new PDO("$driver:host=$host;dbname=$dbName", $user, $pass);
             }

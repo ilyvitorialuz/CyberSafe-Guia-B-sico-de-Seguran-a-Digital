@@ -1,6 +1,5 @@
 <?php
 
-namespace App\Controllers;
 
 class HomeController
 {
@@ -8,6 +7,6 @@ class HomeController
     {
         // Headers for HTML content
         header('Content-Type: text/html; charset=UTF-8');
-        require __DIR__ . '/../Views/main.php';
+        require __DIR__ . '/../../view/main.php';
     }
 }

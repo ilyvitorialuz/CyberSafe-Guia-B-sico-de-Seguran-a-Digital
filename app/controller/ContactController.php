@@ -1,9 +1,6 @@
 <?php
 
-namespace App\Controllers;
 
-use App\Services\ContactService;
-use App\Exceptions\BusinessRuleException;
 
 class ContactController
 {

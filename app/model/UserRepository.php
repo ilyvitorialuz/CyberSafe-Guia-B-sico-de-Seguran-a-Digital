@@ -1,9 +1,5 @@
 <?php
 
-namespace App\Repositories;
-
-use App\Database;
-use PDO;
 
 class UserRepository implements RepositoryInterface
 {

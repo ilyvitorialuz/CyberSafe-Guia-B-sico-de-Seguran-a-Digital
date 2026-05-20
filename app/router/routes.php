@@ -1,11 +1,5 @@
 <?php
 
-use App\Router;
-use App\Controllers\AuthController;
-use App\Controllers\ContactController;
-
-use App\Controllers\HomeController;
-
 $router = new Router();
 
 $router->add('GET', '/', [HomeController::class, 'index']);

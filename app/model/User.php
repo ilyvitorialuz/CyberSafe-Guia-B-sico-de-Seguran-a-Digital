@@ -1,23 +1,20 @@
 <?php
 
-namespace App\Models;
 
-class Contact
+class User
 {
     public $id;
     public $name;
     public $email;
-    public $message;
-    public $category;
+    public $password;
     public $created_at;
 
-    public function __construct($name, $email, $message, $category = null, $id = null, $created_at = null)
+    public function __construct($name, $email, $password, $id = null, $created_at = null)
     {
         $this->id = $id;
         $this->name = $name;
         $this->email = $email;
-        $this->message = $message;
-        $this->category = $category;
+        $this->password = $password;
         $this->created_at = $created_at;
     }
 
@@ -27,8 +24,7 @@ class Contact
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'message' => $this->message,
-            'category' => $this->category,
+            'password' => $this->password,
             'created_at' => $this->created_at
         ];
     }
